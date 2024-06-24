@@ -54,8 +54,8 @@ plt.legend()
 plt.grid(True)
 
 # Formatowanie osi daty
-plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=1))
-plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
+plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=1))
+plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
 plt.gcf().autofmt_xdate()
 
 # Wyświetlenie wykresu
