@@ -116,15 +116,19 @@ for symbol in symbols:
     }
     df = pd.DataFrame(data)
 
+    # Sortowanie danych po czasie
+    df = df.sort_values(by='datetime').reset_index(drop=True)
+
     # Obliczanie RSI
     df['rsi'] = compute_rsi(df)
 
-    # Aktualizacja wartości RSI w bazie danych
+    # Aktualizacja wartości RSI w bazie danych tylko dla pełnych okresów
     for i, row in df.iterrows():
-        matching_record = session.query(crypto_class).filter_by(
-            datetime=row['datetime']).first()
-        if matching_record:
-            matching_record.rsi = row['rsi']
+        if pd.notnull(row['rsi']):
+            matching_record = session.query(crypto_class).filter_by(
+                datetime=row['datetime']).first()
+            if matching_record:
+                matching_record.rsi = row['rsi']
 
     session.commit()
 

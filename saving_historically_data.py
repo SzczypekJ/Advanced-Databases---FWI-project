@@ -1,25 +1,15 @@
-import requests
-from datetime import datetime
+import pandas as pd
 from sqlalchemy import create_engine, Column, Float, DateTime, Integer
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy.inspection import inspect
-import time
-
-# Wprowadź swój klucz API
-api_key = '872ef91dcfc84f95aa34e7c92cd12e3c'
-
-# Lista kryptowalut
-symbols = ['BTC/USD', 'ETH/USD', 'LTC/USD', 'XRP/USD', 'BCH/USD',
-           'ADA/USD', 'DOT/USD', 'BNB/USD', 'LINK/USD', 'DOGE/USD']
+from sqlalchemy.orm import sessionmaker, declarative_base
 
 # Konfiguracja SQLAlchemy
 engine = create_engine('sqlite:///crypto_data.db', echo=True)
 Base = declarative_base()
 
-# Szablon do tworzenia dynamicznych klas tabel
+# Klasa bazowa dla tabeli kryptowalut
 
 
-class CryptoDataTemplate(Base):
+class CryptoData(Base):
     __abstract__ = True
     id = Column(Integer, primary_key=True, autoincrement=True)
     datetime = Column(DateTime)
@@ -27,97 +17,121 @@ class CryptoDataTemplate(Base):
     high = Column(Float)
     low = Column(Float)
     close = Column(Float)
+    rsi = Column(Float)
 
-# Funkcja do tworzenia dynamicznych klas tabel
-
-
-def create_crypto_table(symbol):
-    class CryptoData(CryptoDataTemplate):
-        __tablename__ = f'crypto_data_{symbol.replace("/", "_")}'
-    CryptoData.__name__ = f'CryptoData_{symbol.replace(
-        "/", "_")}'  # Nadanie unikalnej nazwy klasie
-    return CryptoData
+# Klasy dla poszczególnych kryptowalut
 
 
-# Tworzenie tabel w bazie danych, jeśli nie istnieją
-tables = {}
-inspector = inspect(engine)
-for symbol in symbols:
-    table_class = create_crypto_table(symbol)
-    tables[symbol] = table_class
-    # Sprawdzanie, czy tabela już istnieje
-    if not inspector.has_table(table_class.__tablename__):
-        Base.metadata.create_all(engine, tables=[table_class.__table__])
+class CryptoData_BTC_USD(CryptoData):
+    __tablename__ = 'crypto_data_BTC_USD'
+
+
+class CryptoData_ETH_USD(CryptoData):
+    __tablename__ = 'crypto_data_ETH_USD'
+
+
+class CryptoData_LTC_USD(CryptoData):
+    __tablename__ = 'crypto_data_LTC_USD'
+
+
+class CryptoData_XRP_USD(CryptoData):
+    __tablename__ = 'crypto_data_XRP_USD'
+
+
+class CryptoData_BCH_USD(CryptoData):
+    __tablename__ = 'crypto_data_BCH_USD'
+
+
+class CryptoData_ADA_USD(CryptoData):
+    __tablename__ = 'crypto_data_ADA_USD'
+
+
+class CryptoData_DOT_USD(CryptoData):
+    __tablename__ = 'crypto_data_DOT_USD'
+
+
+class CryptoData_BNB_USD(CryptoData):
+    __tablename__ = 'crypto_data_BNB_USD'
+
+
+class CryptoData_LINK_USD(CryptoData):
+    __tablename__ = 'crypto_data_LINK_USD'
+
+
+class CryptoData_DOGE_USD(CryptoData):
+    __tablename__ = 'crypto_data_DOGE_USD'
+
+
+# Tworzenie tabel
+Base.metadata.create_all(engine)
+
+# Funkcja do obliczania RSI
+
+
+def compute_rsi(data, window=14):
+    delta = data['close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+
+# Lista kryptowalut
+symbols = ['BTC/USD', 'ETH/USD', 'LTC/USD', 'XRP/USD', 'BCH/USD',
+           'ADA/USD', 'DOT/USD', 'BNB/USD', 'LINK/USD', 'DOGE/USD']
+
+# Mapa symboli do klas
+symbol_to_class = {
+    'BTC_USD': CryptoData_BTC_USD,
+    'ETH_USD': CryptoData_ETH_USD,
+    'LTC_USD': CryptoData_LTC_USD,
+    'XRP_USD': CryptoData_XRP_USD,
+    'BCH_USD': CryptoData_BCH_USD,
+    'ADA_USD': CryptoData_ADA_USD,
+    'DOT_USD': CryptoData_DOT_USD,
+    'BNB_USD': CryptoData_BNB_USD,
+    'LINK_USD': CryptoData_LINK_USD,
+    'DOGE_USD': CryptoData_DOGE_USD,
+}
 
 # Tworzenie sesji
 Session = sessionmaker(bind=engine)
+session = Session()
 
-# Funkcja do zapisywania danych do bazy danych
-
-
-def save_data_to_db(data, symbol):
-    session = Session()
-    added_entries = 0
-    try:
-        for entry in data:
-            entry_time = datetime.strptime(
-                entry['datetime'], '%Y-%m-%d %H:%M:%S')
-
-            # Sprawdź, czy rekord już istnieje w bazie danych
-            existing_entry = session.query(tables[symbol]).filter_by(
-                datetime=entry_time).first()
-            if existing_entry:
-                print(f"Data for {symbol} at {
-                      entry_time} already exists in the database.")
-                continue
-
-            data_entry = tables[symbol](
-                datetime=entry_time,
-                open=float(entry['open']),
-                high=float(entry['high']),
-                low=float(entry['low']),
-                close=float(entry['close'])
-            )
-            session.add(data_entry)
-            added_entries += 1
-            print(f"Adding data for {symbol} at {entry_time} to the database.")
-
-        if added_entries > 0:
-            session.commit()
-            print(f"Data for {symbol} committed to database.")
-        else:
-            print(f"No new data for {symbol} to commit to the database.")
-    except Exception as e:
-        print(f"Failed to commit data for {symbol}: {e}")
-        session.rollback()
-    finally:
-        session.close()
-
-# Pobierz dane z API dla wszystkich symboli
-
-
-def fetch_data(symbol):
-    now = datetime.now()
-    end_date = now.strftime('%Y-%m-%d %H:%M:%S')
-    url = f"https://api.twelvedata.com/time_series?apikey={api_key}&interval=1h&symbol={
-        symbol}&format=JSON&start_date=2024-06-01 00:00:00&end_date={end_date}&timezone=Europe/Warsaw"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        if 'values' in data:
-            return data['values']
-        else:
-            print(f"No data available for {symbol}: {
-                  data.get('message', 'Unknown error')}")
-            return []
-    else:
-        print(f"Error fetching data for {symbol}: {response.status_code}")
-        return []
-
-
-# Pobierz i zapisz dane dla wszystkich symboli
+# Przetwarzanie każdej kryptowaluty
 for symbol in symbols:
-    data = fetch_data(symbol)
-    if data:
-        save_data_to_db(data, symbol)
-    time.sleep(10)  # Opóźnienie 10 sekund pomiędzy zapytaniami
+    # Pobieranie danych
+    crypto_class = symbol_to_class[symbol.replace('/', '_')]
+    crypto_data = session.query(crypto_class).order_by(
+        crypto_class.datetime).all()
+
+    # Przygotowanie danych do DataFrame
+    data = {
+        'datetime': [data.datetime for data in crypto_data],
+        'open': [data.open for data in crypto_data],
+        'high': [data.high for data in crypto_data],
+        'low': [data.low for data in crypto_data],
+        'close': [data.close for data in crypto_data],
+    }
+    df = pd.DataFrame(data)
+
+    # Sortowanie danych po czasie
+    df = df.sort_values(by='datetime').reset_index(drop=True)
+
+    # Obliczanie RSI
+    df['rsi'] = compute_rsi(df)
+
+    # Wpisywanie 0 dla pierwszych wartości, gdzie nie ma wystarczających danych
+    df['rsi'].fillna(0, inplace=True)
+
+    # Aktualizacja wartości RSI w bazie danych tylko dla pełnych okresów
+    for i, row in df.iterrows():
+        matching_record = session.query(crypto_class).filter_by(
+            datetime=row['datetime']).first()
+        if matching_record:
+            matching_record.rsi = row['rsi']
+
+    session.commit()
+
+session.close()
