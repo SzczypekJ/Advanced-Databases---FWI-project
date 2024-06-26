@@ -6,6 +6,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.inspection import inspect
 import schedule
 import threading
+import pandas as pd
 
 # Wprowadź swój klucz API
 api_key = '872ef91dcfc84f95aa34e7c92cd12e3c'
@@ -29,6 +30,7 @@ class CryptoDataTemplate(Base):
     high = Column(Float)
     low = Column(Float)
     close = Column(Float)
+    rsi = Column(Float)
 
 # Funkcja do tworzenia dynamicznych klas tabel
 
@@ -53,6 +55,17 @@ for symbol in symbols:
 
 # Tworzenie sesji
 Session = sessionmaker(bind=engine)
+
+# Funkcja do obliczania RSI
+
+
+def compute_rsi(data, window=14):
+    delta = data['close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
 
 def fetch_and_store_data():
@@ -98,6 +111,29 @@ def fetch_and_store_data():
                     if added_entries > 0:
                         session.commit()
                         print(f"Data for {symbol} committed to database.")
+
+                        # Aktualizacja RSI po dodaniu nowych danych
+                        crypto_data = session.query(tables[symbol]).order_by(
+                            tables[symbol].datetime).all()
+                        data = {
+                            'datetime': [data.datetime for data in crypto_data],
+                            'open': [data.open for data in crypto_data],
+                            'high': [data.high for data in crypto_data],
+                            'low': [data.low for data in crypto_data],
+                            'close': [data.close for data in crypto_data],
+                        }
+                        df = pd.DataFrame(data)
+                        df['rsi'] = compute_rsi(df)
+
+                        for i, row in df.iterrows():
+                            matching_record = session.query(tables[symbol]).filter_by(
+                                datetime=row['datetime']).first()
+                            if matching_record:
+                                matching_record.rsi = row['rsi']
+
+                        session.commit()
+                        print(f"RSI for {symbol} updated in the database.")
+
                     else:
                         print(f"No new data for {
                               symbol} to commit to the database.")
