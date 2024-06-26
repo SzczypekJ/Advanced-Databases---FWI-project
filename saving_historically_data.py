@@ -123,7 +123,7 @@ for symbol in symbols:
     df['rsi'] = compute_rsi(df)
 
     # Wpisywanie 0 dla pierwszych wartości, gdzie nie ma wystarczających danych
-    df['rsi'].fillna(0, inplace=True)
+    df['rsi'].fillna(50, inplace=True)
 
     # Aktualizacja wartości RSI w bazie danych tylko dla pełnych okresów
     for i, row in df.iterrows():
