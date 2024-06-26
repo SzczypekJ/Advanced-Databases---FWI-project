@@ -64,10 +64,8 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Float, DateTime, Integer
+from sqlalchemy import create_engine, Column, Float, DateTime, Integer
+from sqlalchemy.orm import sessionmaker, declarative_base
 from mplfinance.original_flavor import candlestick_ohlc
 
 # Konfiguracja SQLAlchemy
@@ -75,6 +73,8 @@ engine = create_engine('sqlite:///crypto_data.db', echo=True)
 Base = declarative_base()
 
 # Klasa dla tabeli BTC/USD
+
+
 class CryptoData_BTC_USD(Base):
     __tablename__ = 'crypto_data_BTC_USD'
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -84,12 +84,14 @@ class CryptoData_BTC_USD(Base):
     low = Column(Float)
     close = Column(Float)
 
+
 # Tworzenie sesji
 Session = sessionmaker(bind=engine)
 session = Session()
 
 # Pobieranie wszystkich danych dla BTC/USD
-btc_data = session.query(CryptoData_BTC_USD).all()
+btc_data = session.query(CryptoData_BTC_USD).order_by(
+    CryptoData_BTC_USD.datetime).all()
 
 # Zamknięcie sesji
 session.close()
@@ -101,9 +103,6 @@ highs = [data.high for data in btc_data]
 lows = [data.low for data in btc_data]
 closes = [data.close for data in btc_data]
 
-# Konwersja dat na numeryczne wartości dla matplotlib
-dates_num = mdates.date2num(dates)
-
 # Tworzenie DataFrame
 df = pd.DataFrame({
     'datetime': dates,
@@ -114,6 +113,8 @@ df = pd.DataFrame({
 })
 
 # Obliczanie RSI
+
+
 def compute_rsi(data, window=14):
     delta = data['close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
@@ -121,13 +122,16 @@ def compute_rsi(data, window=14):
     rs = gain / loss
     return 100 - (100 / (1 + rs))
 
+
 df['RSI'] = compute_rsi(df)
 
 # Tworzenie wykresów
-fig, (ax1, ax2) = plt.subplots(2, figsize=(12, 10), gridspec_kw={'height_ratios': [2, 1]})
+fig, (ax1, ax2) = plt.subplots(2, figsize=(12, 10),
+                               gridspec_kw={'height_ratios': [2, 1]})
 
 # Wykres świeczkowy
-candlestick_ohlc(ax1, df[['datetime', 'open', 'high', 'low', 'close']].assign(datetime=mdates.date2num(df['datetime'])).values, width=0.6, colorup='g', colordown='r', alpha=0.8)
+candlestick_ohlc(ax1, df[['datetime', 'open', 'high', 'low', 'close']].assign(
+    datetime=mdates.date2num(df['datetime'])).values, width=0.6, colorup='g', colordown='r', alpha=0.8)
 ax1.xaxis.set_major_formatter(mdates.DateFormatter('%d-%m-%Y'))
 ax1.set_title('BTC/USD Candlestick Chart')
 ax1.set_ylabel('Price [USD]')
@@ -144,4 +148,3 @@ ax2.legend()
 
 plt.tight_layout()
 plt.show()
-
