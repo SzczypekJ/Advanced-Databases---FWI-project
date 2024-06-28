@@ -15,11 +15,8 @@ api_key = '872ef91dcfc84f95aa34e7c92cd12e3c'
 symbols = ['BTC/USD', 'ETH/USD', 'LTC/USD', 'XRP/USD', 'BCH/USD',
            'ADA/USD', 'DOT/USD', 'BNB/USD', 'LINK/USD', 'DOGE/USD']
 
-# Konfiguracja SQLAlchemy
 engine = create_engine('sqlite:///crypto_data.db', echo=True)
 Base = declarative_base()
-
-# Szablon do tworzenia dynamicznych klas tabel
 
 
 class CryptoDataTemplate(Base):
@@ -32,8 +29,6 @@ class CryptoDataTemplate(Base):
     close = Column(Float)
     rsi = Column(Float)
 
-# Funkcja do tworzenia dynamicznych klas tabel
-
 
 def create_crypto_table(symbol):
     class CryptoData(CryptoDataTemplate):
@@ -43,7 +38,6 @@ def create_crypto_table(symbol):
     return CryptoData
 
 
-# Tworzenie tabel w bazie danych, jeśli nie istnieją
 tables = {}
 inspector = inspect(engine)
 for symbol in symbols:
@@ -53,10 +47,7 @@ for symbol in symbols:
     if not inspector.has_table(table_class.__tablename__):
         Base.metadata.create_all(engine, tables=[table_class.__table__])
 
-# Tworzenie sesji
 Session = sessionmaker(bind=engine)
-
-# Funkcja do obliczania RSI
 
 
 def compute_rsi(data, window=14):
@@ -69,7 +60,6 @@ def compute_rsi(data, window=14):
 
 
 def fetch_and_store_data():
-    # Pobieranie danych i zapisywanie do odpowiednich tabel
     now = datetime.now()
     start_date = (now - timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
     end_date = now.strftime('%Y-%m-%d %H:%M:%S')
@@ -88,7 +78,6 @@ def fetch_and_store_data():
                         entry_time = datetime.strptime(
                             entry['datetime'], '%Y-%m-%d %H:%M:%S')
 
-                        # Sprawdź, czy rekord już istnieje w bazie danych
                         existing_entry = session.query(tables[symbol]).filter_by(
                             datetime=entry_time).first()
                         if existing_entry:
@@ -112,7 +101,6 @@ def fetch_and_store_data():
                         session.commit()
                         print(f"Data for {symbol} committed to database.")
 
-                        # Aktualizacja RSI po dodaniu nowych danych
                         crypto_data = session.query(tables[symbol]).order_by(
                             tables[symbol].datetime).all()
                         data = {
@@ -147,9 +135,7 @@ def fetch_and_store_data():
                       data.get("message", "Unknown error")}')
         else:
             print(f'Error fetching data for {symbol}: {response.status_code}')
-        sleep(10)  # Opóźnienie, aby nie przekroczyć limitu API
-
-# Funkcja uruchamiająca harmonogram w oddzielnym wątku
+        sleep(10)
 
 
 def run_schedule():
@@ -158,9 +144,8 @@ def run_schedule():
         sleep(60)
 
 
-# Harmonogram wykonywania funkcji co godzinę, 5 minut po pełnej godzinie
 schedule.every().hour.at(":05").do(fetch_and_store_data)
 
-# Uruchomienie harmonogramu w oddzielnym wątku
+
 schedule_thread = threading.Thread(target=run_schedule)
 schedule_thread.start()
