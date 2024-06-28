@@ -43,22 +43,18 @@ This project automates the process of fetching cryptocurrency data at regular in
 
 ## Usage
 
-1. **Run the Flask application**:
-   ```sh
-   python app.py
-   ```
+1. **Fetch and store cryptocurrency data**:
+   - The script `crypto.py` fetches and stores data at regular intervals.
+   - The script `saving_historically_data.py` fetches historical data.
 
-2. **Fetch and store cryptocurrency data**:
-   - The script `fetch_data.py` fetches and stores data at regular intervals.
-   - The script `historical_data.py` fetches historical data.
 
 ## Scheduling Data Fetching
 
-The script `fetch_data.py` fetches data every hour and stores it in the database. It uses the TwelveData API to retrieve the data and SQLAlchemy to store it in an SQLite database. Additionally, it calculates the RSI for each cryptocurrency and updates the database with these values.
+The script `crypto.py` fetches data every hour and stores it in the database. It uses the TwelveData API to retrieve the data and SQLAlchemy to store it in an SQLite database. Additionally, it calculates the RSI for each cryptocurrency and updates the database with these values.
 
 ## Historical Data Fetching
 
-The script `historical_data.py` fetches historical cryptocurrency data and saves it to the database. This allows for the analysis of past data and trends.
+The script `saving_historically_data.py` fetches historical cryptocurrency data and saves it to the database. This allows for the analysis of past data and trends.
 
 ## RSI Calculation
 
@@ -74,10 +70,6 @@ The SQLite database containing the cryptocurrency data and calculated RSI values
 
 ## Screenshots
 
-![Visualization](path/to/your/image.png)
+![Visualization](C:\Users\szczy\Desktop\STUDIA\Magisterka sem1\Advanced Databases\Projekt\Advanced-Databases - project/powerbi.png)
 
 This image shows the final visualizations created using PowerBI, including candlestick charts and RSI indicators for different cryptocurrencies.
-
----
-
-This `README.md` provides a comprehensive overview of the project, including instructions on how to set it up, fetch data, calculate RSI, and visualize the results.
