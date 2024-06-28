@@ -97,8 +97,10 @@ def save_data_to_db(data, symbol):
 
 
 def fetch_data(symbol):
+    now = datetime.now()
+    end_date = now.strftime('%Y-%m-%d %H:%M:%S')
     url = f"https://api.twelvedata.com/time_series?apikey={api_key}&interval=1h&symbol={
-        symbol}&format=JSON&start_date=2024-06-01 00:00:00&end_date={}&timezone=Europe/Warsaw"
+        symbol}&format=JSON&start_date=2024-06-01 00:00:00&end_date={end_date}&timezone=Europe/Warsaw"
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
