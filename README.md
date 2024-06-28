@@ -70,6 +70,6 @@ The SQLite database containing the cryptocurrency data and calculated RSI values
 
 ## Screenshots
 
-![Visualization](C:\Users\szczy\Desktop\STUDIA\Magisterka sem1\Advanced Databases\Projekt\Advanced-Databases - project/powerbi.png)
+![Visualization](powerbi.png)
 
 This image shows the final visualizations created using PowerBI, including candlestick charts and RSI indicators for different cryptocurrencies.
